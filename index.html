@@ -1,14 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>WebGIS cơ bản với Leaflet</title>
+  <title>WebGIS với nhiều lớp bản đồ</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
 
   <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
     #map {
       height: 100vh;
       width: 100%;
@@ -17,41 +22,58 @@
 </head>
 <body>
 
-<h3 style="text-align:center;">WebGIS của OnceIWas</h3>
 <div id="map"></div>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
 <script>
-  // Khởi tạo bản đồ và đặt vị trí trung tâm (tọa độ Việt Nam)
-  var map = L.map('map').setView([14.0583, 108.2772], 6);
+  // Tạo các lớp nền khác nhau
+  var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors'
+  });
 
-// Thêm lớp nền hình ảnh vệ tinh từ Esri
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-  maxZoom: 19,
-  attribution: 'Tiles © Esri — Source: Esri, Earthstar Geographics'
-}).addTo(map);
+  var esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19,
+    attribution: 'Tiles © Esri — Source: Esri, Earthstar Geographics'
+  });
 
-  // Thêm 1 marker (ví dụ tại Hà Nội)
-  var marker = L.marker([20.989318402031923, 105.7957750945117]).addTo(map);
-  marker.bindPopup("<b>HANU</b><br>Hanoi University").openPopup();
-</script>
+  // Khởi tạo bản đồ với lớp nền mặc định là Esri
+  var map = L.map('map', {
+    center: [14.0583, 108.2772],
+    zoom: 6,
+    layers: [esriSat]  // mặc định là vệ tinh
+  });
 
-   // Thêm công cụ tìm kiếm với khả năng nhập địa chỉ hoặc tọa độ
-  var geocoder = L.Control.geocoder({
+  // Marker ví dụ tại HANU
+  var marker = L.marker([20.989318402031923, 105.7957750945117]).addTo(map)
+    .bindPopup("<b>HANU</b><br>Hanoi University").openPopup();
+
+  // Thêm chức năng tìm kiếm địa điểm
+  L.Control.geocoder({
     defaultMarkGeocode: false,
-    placeholder: 'Nhập địa chỉ hoặc tọa độ...'
+    placeholder: '🔍 Nhập địa chỉ hoặc tọa độ...',
+    position: 'topright'
   })
   .on('markgeocode', function(e) {
     var latlng = e.geocode.center;
     map.setView(latlng, 16);
-
     L.marker(latlng).addTo(map)
       .bindPopup("📍 " + e.geocode.name)
       .openPopup();
   })
   .addTo(map);
+
+  // Lớp nền có thể lựa chọn
+  var baseMaps = {
+    "🗺️ OpenStreetMap": osm,
+    "🛰️ Esri Satellite": esriSat
+  };
+
+  // Thêm điều khiển lớp bản đồ vào góc trên bên trái
+  L.control.layers(baseMaps).addTo(map);
 </script>
 
 </body>
