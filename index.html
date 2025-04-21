@@ -106,7 +106,7 @@
   }
 
   // 👉 Load sẵn GeoJSON từ GitHub
-  fetch("https://raw.githubusercontent.com/onceiwas/onceiwas/onceiwas.github.io/main/vietnam_provinces.geojson") // Thay thế [USERNAME] và [REPO_NAME] với thông tin repo của bạn
+  fetch("https://github.com/onceiwas/onceiwas.github.io/blob/main/vietnam_provinces.geojson") // Thay thế [USERNAME] và [REPO_NAME] với thông tin repo của bạn
     .then(res => res.json())
     .then(data => addGeoJSONLayer(data, "🗺️ Ranh giới tỉnh"));
 
