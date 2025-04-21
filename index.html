@@ -106,7 +106,7 @@
   }
 
   // 👉 Load sẵn GeoJSON mặc định
-  fetch("Vietnam_Provinces.GeoJSON")
+  fetch("vietnam_provinces.geojson")
     .then(res => res.json())
     .then(data => addGeoJSONLayer(data, "🗺️ Ranh giới tỉnh"));
 
