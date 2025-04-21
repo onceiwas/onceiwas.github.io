@@ -38,10 +38,20 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
   marker.bindPopup("<b>HANU</b><br>Hanoi University").openPopup();
 </script>
 
-   // Thêm chức năng tìm kiếm
-  L.Control.geocoder({
-    defaultMarkGeocode: true
-  }).addTo(map);
+   // Thêm công cụ tìm kiếm với khả năng nhập địa chỉ hoặc tọa độ
+  var geocoder = L.Control.geocoder({
+    defaultMarkGeocode: false,
+    placeholder: 'Nhập địa chỉ hoặc tọa độ...'
+  })
+  .on('markgeocode', function(e) {
+    var latlng = e.geocode.center;
+    map.setView(latlng, 16);
+
+    L.marker(latlng).addTo(map)
+      .bindPopup("📍 " + e.geocode.name)
+      .openPopup();
+  })
+  .addTo(map);
 </script>
 
 </body>
