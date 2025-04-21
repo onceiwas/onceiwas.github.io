@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>WebGIS với nhiều lớp bản đồ</title>
+  <title>WebGIS với GeoJSON overlay</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -13,9 +13,10 @@
     html, body {
       margin: 0;
       padding: 0;
+      height: 100%;
     }
     #map {
-      height: 100vh;
+      height: 100%;
       width: 100%;
     }
   </style>
@@ -29,7 +30,7 @@
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
 <script>
-  // Tạo các lớp nền khác nhau
+  // Lớp nền
   var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '© OpenStreetMap contributors'
@@ -40,18 +41,14 @@
     attribution: 'Tiles © Esri — Source: Esri, Earthstar Geographics'
   });
 
-  // Khởi tạo bản đồ với lớp nền mặc định là Esri
+  // Khởi tạo bản đồ
   var map = L.map('map', {
     center: [14.0583, 108.2772],
     zoom: 6,
-    layers: [esriSat]  // mặc định là vệ tinh
+    layers: [osm]
   });
 
-  // Marker ví dụ tại HANU
-  var marker = L.marker([20.989318402031923, 105.7957750945117]).addTo(map)
-    .bindPopup("<b>HANU</b><br>Hanoi University").openPopup();
-
-  // Thêm chức năng tìm kiếm địa điểm
+  // Thêm công cụ tìm kiếm
   L.Control.geocoder({
     defaultMarkGeocode: false,
     placeholder: '🔍 Nhập địa chỉ hoặc tọa độ...',
@@ -66,14 +63,40 @@
   })
   .addTo(map);
 
-  // Lớp nền có thể lựa chọn
-  var baseMaps = {
-    "🗺️ OpenStreetMap": osm,
-    "🛰️ Esri Satellite": esriSat
-  };
+  // Thêm marker ví dụ
+  var marker = L.marker([20.989318402031923, 105.7957750945117]).addTo(map)
+    .bindPopup("<b>HANU</b><br>Hanoi University").openPopup();
 
-  // Thêm điều khiển lớp bản đồ vào góc trên bên trái
-  L.control.layers(baseMaps).addTo(map);
+  // Thêm GeoJSON overlay (sửa tên file nếu cần)
+  var provinceLayer;
+
+  fetch("Vietnam_Provinces.GeoJSON") // File nằm cùng thư mục với HTML
+    .then(res => res.json())
+    .then(data => {
+      provinceLayer = L.geoJSON(data, {
+        style: {
+          color: "#ff7800",
+          weight: 1,
+          fillColor: "#00aaff",
+          fillOpacity: 0.3 // Mức độ trong suốt
+        },
+        onEachFeature: function (feature, layer) {
+          const name = feature.properties.NAME_1 || feature.properties.name || "Không rõ";
+          layer.bindPopup("📌 Tỉnh: " + name);
+        }
+      }).addTo(map);
+
+      // Cho phép bật/tắt lớp overlay
+      L.control.layers(
+        {
+          "🗺️ OpenStreetMap": osm,
+          "🛰️ Esri Satellite": esriSat
+        },
+        {
+          "📍 Ranh giới tỉnh": provinceLayer
+        }
+      ).addTo(map);
+    });
 </script>
 
 </body>
