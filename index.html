@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>WebGIS với GeoJSON overlay</title>
+  <title>WebGIS có chức năng upload GeoJSON</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -16,46 +16,59 @@
       height: 100%;
     }
     #map {
-      height: 100%;
+      height: 90%;
       width: 100%;
+    }
+    #upload-box {
+      height: 10%;
+      padding: 10px;
+      background-color: #f7f7f7;
+      text-align: center;
+    }
+    input[type="file"] {
+      margin-top: 5px;
     }
   </style>
 </head>
 <body>
 
 <div id="map"></div>
+<div id="upload-box">
+  <label>📂 Tải file GeoJSON: </label>
+  <input type="file" id="file-input" accept=".geojson,.json" />
+</div>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
 <script>
-  // Lớp nền
-  var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  // Bản đồ nền
+  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '© OpenStreetMap contributors'
   });
 
-  var esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 19,
     attribution: 'Tiles © Esri — Source: Esri, Earthstar Geographics'
   });
 
-  // Khởi tạo bản đồ
-  var map = L.map('map', {
+  // Tạo bản đồ
+  const map = L.map('map', {
     center: [14.0583, 108.2772],
     zoom: 6,
     layers: [osm]
   });
 
-  // Thêm công cụ tìm kiếm
+  // Tìm kiếm
   L.Control.geocoder({
     defaultMarkGeocode: false,
     placeholder: '🔍 Nhập địa chỉ hoặc tọa độ...',
     position: 'topright'
   })
   .on('markgeocode', function(e) {
-    var latlng = e.geocode.center;
+    const latlng = e.geocode.center;
     map.setView(latlng, 16);
     L.marker(latlng).addTo(map)
       .bindPopup("📍 " + e.geocode.name)
@@ -63,40 +76,60 @@
   })
   .addTo(map);
 
-  // Thêm marker ví dụ
-  var marker = L.marker([20.989318402031923, 105.7957750945117]).addTo(map)
-    .bindPopup("<b>HANU</b><br>Hanoi University").openPopup();
+  // Marker ví dụ
+  L.marker([20.989318402031923, 105.7957750945117]).addTo(map)
+    .bindPopup("<b>HANU</b><br>Hanoi University");
 
-  // Thêm GeoJSON overlay (sửa tên file nếu cần)
-  var provinceLayer;
+  // Điều khiển lớp nền
+  const baseMaps = {
+    "🗺️ OSM": osm,
+    "🛰️ Vệ tinh": esriSat
+  };
 
-  fetch("Vietnam_Provinces.GeoJSON") // File nằm cùng thư mục với HTML
-    .then(res => res.json())
-    .then(data => {
-      provinceLayer = L.geoJSON(data, {
-        style: {
-          color: "#ff7800",
-          weight: 1,
-          fillColor: "#00aaff",
-          fillOpacity: 0.3 // Mức độ trong suốt
-        },
-        onEachFeature: function (feature, layer) {
-          const name = feature.properties.NAME_1 || feature.properties.name || "Không rõ";
-          layer.bindPopup("📌 Tỉnh: " + name);
+  const overlayMaps = {};
+  L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+  // Upload GeoJSON
+  const fileInput = document.getElementById("file-input");
+  let uploadedLayer;
+
+  fileInput.addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      try {
+        const geojson = JSON.parse(e.target.result);
+
+        // Xóa lớp cũ nếu có
+        if (uploadedLayer) {
+          map.removeLayer(uploadedLayer);
         }
-      }).addTo(map);
 
-      // Cho phép bật/tắt lớp overlay
-      L.control.layers(
-        {
-          "🗺️ OpenStreetMap": osm,
-          "🛰️ Esri Satellite": esriSat
-        },
-        {
-          "📍 Ranh giới tỉnh": provinceLayer
-        }
-      ).addTo(map);
-    });
+        uploadedLayer = L.geoJSON(geojson, {
+          style: {
+            color: "#ff7800",
+            weight: 1,
+            fillColor: "#00aaff",
+            fillOpacity: 0.3
+          },
+          onEachFeature: function(feature, layer) {
+            const name = feature.properties.NAME_1 || feature.properties.name || "Không rõ";
+            layer.bindPopup("📌 Tên: " + name);
+          }
+        }).addTo(map);
+
+        map.fitBounds(uploadedLayer.getBounds());
+      } catch (err) {
+        alert("❌ Không đọc được file GeoJSON.");
+        console.error(err);
+      }
+    };
+
+    reader.readAsText(file);
+  });
 </script>
 
 </body>
