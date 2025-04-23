@@ -1,0 +1,11 @@
+/* Basic styling for the body */
+body {
+    margin: 0;
+    padding: 0;
+}
+
+/* Styling for the map container */
+#map {
+    height: 100vh; /* Make the map fill the full viewport height */
+    width: 100%;  /* Make the map fill the full viewport width */
+}
