@@ -1,133 +1,238 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>WebGIS với GeoJSON mặc định & upload</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGIS with Default & Uploaded GeoJSON</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css" />
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
-    #map {
-      height: 90%;
-      width: 100%;
-    }
-    #upload-box {
-      height: 10%;
-      padding: 10px;
-      background-color: #f7f7f7;
-      text-align: center;
-    }
-    input[type="file"] {
-      margin-top: 5px;
-    }
-  </style>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: sans-serif; /* Optional: improve font */
+        }
+        #map {
+            height: 90%; /* Map takes 90% height */
+            width: 100%;
+        }
+        #upload-box {
+            height: 10%; /* Upload box takes 10% height */
+            padding: 10px;
+            background-color: #f7f7f7;
+            text-align: center;
+            box-sizing: border-box; /* Include padding in height */
+            display: flex; /* Use flexbox for alignment */
+            align-items: center; /* Vertically center */
+            justify-content: center; /* Horizontally center */
+        }
+         #upload-box label {
+             margin-right: 10px; /* Add space between label and input */
+         }
+    </style>
 </head>
 <body>
 
 <div id="map"></div>
 <div id="upload-box">
-  <label>📂 Tải thêm file GeoJSON: </label>
-  <input type="file" id="file-input" accept=".geojson,.json" />
+    <label for="file-input">📂 Upload additional GeoJSON: </label>
+    <input type="file" id="file-input" accept=".geojson,.json" />
 </div>
 
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20n6jBk/vtsSFqThFdBAoD6p/+79rak9kPw59g/TFyS4="
+        crossorigin=""></script>
+<script src="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js"></script>
+
 
 <script>
-  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap contributors'
-  });
+    // Define Base Maps
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    });
 
-  const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 19,
-    attribution: 'Tiles © Esri — Source: Esri, Earthstar Geographics'
-  });
+    const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles © Esri — Source: Esri, Earthstar Geographics, CNES/Airbus DS, GeoEye, USDA FSA, USGS, AeroGRID, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), cribis ltd, MapmyIndia, © OpenStreetMap contributors, and the GIS User Community'
+    });
 
-  const map = L.map('map', {
-    center: [14.0583, 108.2772],
-    zoom: 6,
-    layers: [osm]
-  });
+    // Initialize the Map
+    // Start centered on Vietnam, adjust zoom as needed
+    const map = L.map('map', {
+        center: [16.0, 107.0], // Centered roughly in Vietnam
+        zoom: 6,
+        layers: [osm] // Default base layer
+    });
 
-  L.Control.geocoder({
-    defaultMarkGeocode: false,
-    placeholder: '🔍 Nhập địa chỉ hoặc tọa độ...',
-    position: 'topright'
-  })
-  .on('markgeocode', function(e) {
-    const latlng = e.geocode.center;
-    map.setView(latlng, 16);
-    L.marker(latlng).addTo(map)
-      .bindPopup("📍 " + e.geocode.name)
-      .openPopup();
-  })
-  .addTo(map);
+    // Add Geocoder Control
+    L.Control.geocoder({
+        defaultMarkGeocode: false,
+        placeholder: '🔍 Search address or coordinates...', // Updated placeholder
+        position: 'topright'
+    })
+    .on('markgeocode', function(e) {
+        const latlng = e.geocode.center;
+        map.setView(latlng, 16);
+        L.marker(latlng).addTo(map)
+          .bindPopup("📍 " + e.geocode.name)
+          .openPopup();
+    })
+    .addTo(map);
 
-  const baseMaps = {
-    "🗺️ OSM": osm,
-    "🛰️ Vệ tinh": esriSat
-  };
-
-  const overlayMaps = {};
-  L.control.layers(baseMaps, overlayMaps).addTo(map);
-
-  let uploadedLayer;
-
-  function addGeoJSONLayer(data, name = "📍 Dữ liệu GeoJSON") {
-    if (uploadedLayer) {
-      map.removeLayer(uploadedLayer);
-    }
-
-    uploadedLayer = L.geoJSON(data, {
-      style: {
-        color: "#ff7800",
-        weight: 1,
-        fillColor: "#00aaff",
-        fillOpacity: 0.3 // Cập nhật độ trong suốt
-      },
-      onEachFeature: function (feature, layer) {
-        const name = feature.properties.NAME_1 || feature.properties.name || "Không rõ";
-        layer.bindPopup("📌 Tên: " + name);
-      }
-    }).addTo(map);
-
-    map.fitBounds(uploadedLayer.getBounds());
-    overlayMaps[name] = uploadedLayer;
-  }
-
-  // 👉 Load sẵn GeoJSON từ GitHub
-  fetch("https://github.com/onceiwas/onceiwas.github.io/blob/main/vietnam_provinces.geojson") // Thay thế [USERNAME] và [REPO_NAME] với thông tin repo của bạn
-    .then(res => res.json())
-    .then(data => addGeoJSONLayer(data, "🗺️ Ranh giới tỉnh"));
-
-  // 👉 Cho phép upload thêm GeoJSON
-  document.getElementById("file-input").addEventListener("change", function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const geojson = JSON.parse(e.target.result);
-        addGeoJSONLayer(geojson, "📂 Dữ liệu từ upload");
-      } catch (err) {
-        alert("❌ Không đọc được file GeoJSON.");
-        console.error(err);
-      }
+    // Define Objects for Layer Control
+    const baseMaps = {
+        "🗺️ OSM": osm,
+        "🛰️ Satellite": esriSat // Updated name
     };
 
-    reader.readAsText(file);
-  });
+    // This object will be populated with overlay layers (default and uploaded)
+    const overlayMaps = {};
+
+    // Variable to keep track of the last uploaded layer (for replacement logic)
+    let uploadedLayer = null;
+
+    // Function to add a GeoJSON layer to the map and potentially fit bounds
+    function addGeoJSONLayer(data, name = "📍 GeoJSON Data", fitBounds = true) {
+         // Basic check if data is valid GeoJSON structure
+        if (!data || !data.type) {
+             console.error("Invalid GeoJSON data provided:", data);
+             alert("❌ Invalid GeoJSON data.");
+             return null; // Indicate failure
+        }
+
+
+        // Create the Leaflet GeoJSON layer
+        const geojsonLayer = L.geoJSON(data, {
+            style: {
+                color: "#ff7800",
+                weight: 1,
+                fillColor: "#00aaff",
+                fillOpacity: 0.5 // Default opacity
+            },
+            onEachFeature: function (feature, layer) {
+                // Add popup with feature properties (if any)
+                let popupContent = '';
+                if (feature.properties) {
+                    for (const key in feature.properties) {
+                        if (feature.properties.hasOwnProperty(key) && feature.properties[key] != null) {
+                             popupContent += `<b>${key}:</b> ${feature.properties[key]}<br/>`;
+                        }
+                    }
+                }
+                 layer.bindPopup(popupContent || "No properties");
+            }
+        }); // Don't add to map yet
+
+
+        // Add the layer to the map
+        geojsonLayer.addTo(map);
+
+        // Attempt to fit bounds if requested and geometry is valid
+        if (fitBounds) {
+            try {
+                const bounds = geojsonLayer.getBounds();
+                if (bounds && bounds.isValid()) {
+                    map.fitBounds(bounds);
+                } else {
+                    console.warn(`Layer "${name}" has no valid bounds or is empty.`);
+                    // Optional: Zoom to a default view near the lake if fitBounds fails for the default layer
+                    if (name === "💧 Bao Linh Lake") { // Check if it's the default layer failing
+                         map.setView([21.06, 105.95], 13); // Fallback view near Bao Linh
+                    }
+                }
+            } catch (e) {
+                 console.error(`Error fitting bounds for layer "${name}":`, e);
+                 // Optional: Fallback view as above
+                 if (name === "💧 Bao Linh Lake") {
+                      map.setView([21.06, 105.95], 13);
+                 }
+            }
+        }
+
+        return geojsonLayer; // Return the created layer
+    }
+
+    // --- LOAD DEFAULT BAO LINH LAKE GEOJSON ---
+    const defaultLakeUrl = "bao_linh_lake.geojson"; // Assuming the file is in the same directory
+
+    fetch(defaultLakeUrl)
+        .then(response => {
+            if (!response.ok) {
+                 // Log status if fetch fails
+                 console.error(`Failed to fetch default GeoJSON: ${response.status} ${response.statusText}`);
+                throw new Error(`HTTP error fetching ${defaultLakeUrl}! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Add the default lake layer using the function
+            const defaultLakeLayer = addGeoJSONLayer(data, "💧 Bao Linh Lake", true); // Add and fit bounds
+
+            if (defaultLakeLayer) {
+                // Add the default layer to the overlay control object
+                overlayMaps["💧 Bao Linh Lake"] = defaultLakeLayer;
+
+                // Since the layer control might already be added,
+                // the default layer won't appear automatically.
+                // A simple approach for static controls is to ensure
+                // overlayMaps is populated before the control is created.
+                // Or, you'd need to remove and re-add the control or use a plugin.
+                // For this setup, we add it to overlayMaps and create the control *after* this fetch block.
+            }
+        })
+        .catch(error => {
+            console.error('Error loading default Bao Linh Lake GeoJSON:', error);
+            // alert('Could not load the default lake data.'); // Avoid disruptive alerts on load
+        });
+
+    // --- Handle Uploaded GeoJSON ---
+    document.getElementById("file-input").addEventListener("change", function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const geojson = JSON.parse(e.target.result);
+
+                // Remove previous uploaded layer if it exists
+                 if (uploadedLayer) {
+                     map.removeLayer(uploadedLayer);
+                     // Optional: Remove from overlayMaps and control if needed
+                     // For this simple case, we just replace the 'uploadedLayer' variable
+                 }
+
+                // Add the uploaded layer using the function
+                uploadedLayer = addGeoJSONLayer(geojson, `📂 ${file.name}`, true); // Add and fit bounds
+
+                 // Note: Adding uploadedLayer to overlayMaps dynamically requires
+                 // recreating the layer control or using a plugin.
+                 // For now, uploaded files appear on the map but aren't togglable
+                 // in the initial layer control unless you manually add them there.
+                 // If you want uploaded files in the control, you'd need to manage
+                 // the overlayMaps object and the control instance more actively.
+
+            } catch (err) {
+                alert("❌ Could not read or parse the file as GeoJSON.");
+                console.error("Error processing uploaded file:", err);
+            }
+        };
+
+        reader.readAsText(file);
+    });
+
+    // --- Add Layer Control ---
+    // Create and add the layer control *after* initiating the default fetch.
+    // The overlayMaps object might be populated by the default fetch's .then block
+    // before the user interacts with the control.
+    L.control.layers(baseMaps, overlayMaps).addTo(map);
+
 </script>
 
 </body>
